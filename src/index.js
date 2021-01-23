@@ -1,0 +1,46 @@
+const express = require('express');
+const engine = require('ejs-mate');
+const path = require('path');
+const morgan = require('morgan');
+const passport = require('passport');
+const session = require('express-session');
+const flash = require('connect-flash');
+
+//inicializar
+const app = express(); //para que la app lo ejecute
+require('./database');
+require('./passport/local-auth');
+
+//configuracion
+app.set('views', path.join(__dirname, 'views'));
+app.engine('ejs', engine);
+app.set('view engine','ejs');
+app.set('port', process.env.PORT || 1337); //utiliza el puerto local, si no existe, usa el 1337
+
+//middlewares
+app.use(morgan('dev'));
+app.use(express.urlencoded({extended: false}));
+app.use(session({
+  secret: 'secretsession',
+  resave: false,
+  saveUninitialized: false
+}));
+app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use((req, res, next)=>{
+  app.locals.registerMessage = req.flash('registerMessage');
+  app.locals.loginMessage = req.flash('loginMessage');
+  app.locals.user = req.user;
+  next();
+});
+
+//Rutas
+app.use('/', require('./routes/index'));
+
+
+//iniciar el servidor
+app.listen(app.get('port'), () => {
+  console.log('server on port', app.get('port'))
+});
